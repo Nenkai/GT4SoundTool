@@ -133,8 +133,8 @@ namespace GT4SqTest
                 sf2.AddPresetBag();
 
                 // Preset has a specified range with 0xFF (otherwise instruments provide it)
-                if (prog.CountOrFlag == 0xFF)
-                    sf2.AddPresetGenerator(SF2Generator.KeyRange, new SF2GeneratorAmount { LowByte = prog.FullRangeMin, HighByte = prog.FullRangeMax });
+                //if (prog.CountOrFlag == 0xFF)
+                //    sf2.AddPresetGenerator(SF2Generator.KeyRange, new SF2GeneratorAmount { LowByte = prog.FullRangeMin, HighByte = prog.FullRangeMax });
 
                 sf2.AddPresetGenerator(SF2Generator.Instrument, new SF2GeneratorAmount { Amount = (short)sf2.AddInstrument(name) });
 
