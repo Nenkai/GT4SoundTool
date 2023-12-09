@@ -1,0 +1,6 @@
+[submodule "meltysynth"]
+	path = meltysynth
+	url = https://github.com/sinshu/meltysynth.git
+[submodule "SoundFont2"]
+	path = SoundFont2
+	url = https://github.com/Kermalis/SoundFont2.git
