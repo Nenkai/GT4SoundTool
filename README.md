@@ -13,6 +13,6 @@ Current state:
 
 ---
 
-**This repo should be used as proof of work, perhaps someone can pick up on it in the future.**
+**This repo should be considered as a small non-serious test project to research sound files, perhaps someone can pick up on it in the future.**
 
 The documentation is the code. I've documented my references as much as I could.
