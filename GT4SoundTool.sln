@@ -1,0 +1,58 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.7.34221.43
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GT4SoundTool", "GT4SoundTool\GT4SoundTool.csproj", "{C45727F1-D8C8-4074-800B-39D7C03DFD0F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SoundFont2", "SoundFont2\SoundFont2.csproj", "{9BB24A6F-85C5-44B1-BC46-661C1D1FD46B}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeltySynth", "MeltySynth\MeltySynth.csproj", "{5D4AB8AD-AF36-4026-8AD8-CA21AC0F2215}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Coverage|Any CPU = Coverage|Any CPU
+		Debug|Any CPU = Debug|Any CPU
+		DebugTest|Any CPU = DebugTest|Any CPU
+		Release|Any CPU = Release|Any CPU
+		ReleaseTest|Any CPU = ReleaseTest|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C45727F1-D8C8-4074-800B-39D7C03DFD0F}.Coverage|Any CPU.ActiveCfg = Release|Any CPU
+		{C45727F1-D8C8-4074-800B-39D7C03DFD0F}.Coverage|Any CPU.Build.0 = Release|Any CPU
+		{C45727F1-D8C8-4074-800B-39D7C03DFD0F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C45727F1-D8C8-4074-800B-39D7C03DFD0F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C45727F1-D8C8-4074-800B-39D7C03DFD0F}.DebugTest|Any CPU.ActiveCfg = Debug|Any CPU
+		{C45727F1-D8C8-4074-800B-39D7C03DFD0F}.DebugTest|Any CPU.Build.0 = Debug|Any CPU
+		{C45727F1-D8C8-4074-800B-39D7C03DFD0F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C45727F1-D8C8-4074-800B-39D7C03DFD0F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C45727F1-D8C8-4074-800B-39D7C03DFD0F}.ReleaseTest|Any CPU.ActiveCfg = Release|Any CPU
+		{C45727F1-D8C8-4074-800B-39D7C03DFD0F}.ReleaseTest|Any CPU.Build.0 = Release|Any CPU
+		{9BB24A6F-85C5-44B1-BC46-661C1D1FD46B}.Coverage|Any CPU.ActiveCfg = Release|Any CPU
+		{9BB24A6F-85C5-44B1-BC46-661C1D1FD46B}.Coverage|Any CPU.Build.0 = Release|Any CPU
+		{9BB24A6F-85C5-44B1-BC46-661C1D1FD46B}.Debug|Any CPU.ActiveCfg = Release|Any CPU
+		{9BB24A6F-85C5-44B1-BC46-661C1D1FD46B}.Debug|Any CPU.Build.0 = Release|Any CPU
+		{9BB24A6F-85C5-44B1-BC46-661C1D1FD46B}.DebugTest|Any CPU.ActiveCfg = Release|Any CPU
+		{9BB24A6F-85C5-44B1-BC46-661C1D1FD46B}.DebugTest|Any CPU.Build.0 = Release|Any CPU
+		{9BB24A6F-85C5-44B1-BC46-661C1D1FD46B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9BB24A6F-85C5-44B1-BC46-661C1D1FD46B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9BB24A6F-85C5-44B1-BC46-661C1D1FD46B}.ReleaseTest|Any CPU.ActiveCfg = Release|Any CPU
+		{9BB24A6F-85C5-44B1-BC46-661C1D1FD46B}.ReleaseTest|Any CPU.Build.0 = Release|Any CPU
+		{5D4AB8AD-AF36-4026-8AD8-CA21AC0F2215}.Coverage|Any CPU.ActiveCfg = Debug|Any CPU
+		{5D4AB8AD-AF36-4026-8AD8-CA21AC0F2215}.Coverage|Any CPU.Build.0 = Debug|Any CPU
+		{5D4AB8AD-AF36-4026-8AD8-CA21AC0F2215}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5D4AB8AD-AF36-4026-8AD8-CA21AC0F2215}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5D4AB8AD-AF36-4026-8AD8-CA21AC0F2215}.DebugTest|Any CPU.ActiveCfg = Debug|Any CPU
+		{5D4AB8AD-AF36-4026-8AD8-CA21AC0F2215}.DebugTest|Any CPU.Build.0 = Debug|Any CPU
+		{5D4AB8AD-AF36-4026-8AD8-CA21AC0F2215}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5D4AB8AD-AF36-4026-8AD8-CA21AC0F2215}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5D4AB8AD-AF36-4026-8AD8-CA21AC0F2215}.ReleaseTest|Any CPU.ActiveCfg = Release|Any CPU
+		{5D4AB8AD-AF36-4026-8AD8-CA21AC0F2215}.ReleaseTest|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {4F8D4E0C-DA16-414F-8BA6-5805D666D9DA}
+	EndGlobalSection
+EndGlobal
