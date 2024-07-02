@@ -6,10 +6,9 @@ using System.Threading.Tasks;
 
 using Syroot.BinaryData;
 
-namespace GT4SqTest.Formats.Se.Meta
+namespace GT4SoundTool.Formats.Se.Meta;
+
+public interface ISeMeta
 {
-    public interface ISeMeta
-    {
-        public void Read(BinaryStream bs);
-    }
+    public void Read(BinaryStream bs);
 }

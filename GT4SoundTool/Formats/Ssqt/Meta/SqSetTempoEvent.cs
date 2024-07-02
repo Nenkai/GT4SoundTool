@@ -6,15 +6,14 @@ using System.Threading.Tasks;
 
 using Syroot.BinaryData;
 
-namespace GT4SqTest.Formats.Ssqt.Meta
-{
-    public class SqSetTempoEvent : ISqMeta
-    {
-        public uint UsecPerQuarterNote { get; set; }
+namespace GT4SoundTool.Formats.Ssqt.Meta;
 
-        public void Read(BinaryStream bs)
-        {
-            UsecPerQuarterNote = (uint)(bs.ReadByte() << 16 | bs.Read1Byte() << 8 | bs.Read1Byte());
-        }
+public class SqSetTempoEvent : ISqMeta
+{
+    public uint UsecPerQuarterNote { get; set; }
+
+    public void Read(BinaryStream bs)
+    {
+        UsecPerQuarterNote = (uint)(bs.ReadByte() << 16 | bs.Read1Byte() << 8 | bs.Read1Byte());
     }
 }
