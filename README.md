@@ -28,7 +28,7 @@ There are two types of sequencers to keep in mind, `Sq` and `Se`, `Sq` for track
 `SDDRV::SqSequencer::*` handles these.
 
 #### Ins (Instrument)
-`.ins` (file magic `INST)` files are linked to those `Sq`'s, providing the samples for each **ins**trument (& their note ranges) used by each MIDI channel. Despite having `SShd` header within, **these files does not follow the regular/general Sony `SShd/SSbd` header format normally used by `.ads` music formats**.
+`.ins` (file magic `INST`) files are linked to those `Sq`'s, providing the samples for each **ins**trument (& their note ranges) used by each MIDI channel. Despite having `SShd` header within, **these files does not follow the regular/general Sony `SShd/SSbd` header format normally used by `.ads` music formats**.
 
 `Ins` is also refered to as ***Jam***, possibly directly referencing the sound authoring tool provided by the PS2 SDK (in `PS2SDK/P-sound/atools/Sndtool111/mac/SoundPreview111/Doc/html/jam.htm` - note: documentation is all in japanese).
 
@@ -56,7 +56,7 @@ Currently, this tool takes `.sqt` files and spits out:
 * `samples` folder - Extracted samples from `.ins`, mono
 
 The `.wav` is partially correct. But:
-* The pitch for certain notes is incorrect. This is caused by the fourth byte in `JamSplitChunk` not currently being used - forcing the game not to apply it confirms that the same overall pitch happens
+* The pitch for certain notes is incorrect. This is caused by the fourth byte in `JamSplitChunk` not currently being used - forcing the game not to apply it confirms that the same overall incorrect pitch happens so this is a good sign
 * Some notes aren't held long enough. Not sure why.
 * Volume provided by `JamSplitChunk`s isn't really accounted for yet
 * ADSR Envelope values in `JamSplitChunk` aren't accounted for yet, not sure how to interpret it. [vgmtrans's PSXSPU.h](https://github.com/vgmtrans/vgmtrans/blob/6f6f86823ab10ce72f0c6acd6ef7991e631613f7/src/main/formats/common/PSXSPU.h#L128) might give a clue, but one of the issues mentions that not [everything is inherently supported by `.sf2`](https://github.com/vgmtrans/vgmtrans/issues/138).
@@ -70,7 +70,7 @@ As for reverse-engineering, the PS2's EE cannot interact directly with the sound
 It essentially goes like this internally:
 
 -> Init SDDRV (Sequencers, Voice System, Es, etc).
--> Start `SPUP` RPC Service (from `PDISPU2.irx`) 
+-> Start `SPUP` RPC Service (`PDISPU2.irx`) 
 -> Open files i.e `SDDRV::Jam::open`
 -> Process reading sqt, etc.
 -> `SDDRV::VoiceSystem::updateCore` passes SPU structure containing sound parameters to IOP
