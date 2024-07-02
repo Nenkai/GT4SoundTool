@@ -84,6 +84,6 @@ It essentially goes like this internally:
 * [SF2 Specification](https://www.synthfont.com/SFSPEC21.PDF)
 * IDA
 * PS2 SDK Docs, like PS2 IOP Reference Sound, sdmacro.h, etc
-* IDA databases to be provided at a later date
+* [IDA & Ghidra databases](https://www.mediafire.com/file/l6hdjyuhcjbo5tr/GT_RE.zip/file)
 * 010 Editor Templates - [INST](https://github.com/Nenkai/GT-File-Specifications-Documentation/blob/master/Formats/PS2/GT4/GT4_INST_SShd_Jam_Custom.bt) & [SQT](https://github.com/Nenkai/GT-File-Specifications-Documentation/blob/master/Formats/PS2/GT4_SSQT_SqTable.bt)
 * **The code for this tool** will have more details.
