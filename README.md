@@ -85,4 +85,5 @@ It essentially goes like this internally:
 * IDA
 * PS2 SDK Docs, like PS2 IOP Reference Sound, sdmacro.h, etc
 * IDA databases to be provided at a later date
+* 010 Templates - [INST](https://github.com/Nenkai/GT-File-Specifications-Documentation/blob/master/Formats/PS2/GT4/GT4_INST_SShd_Jam_Custom.bt) & [SQT](https://github.com/Nenkai/GT-File-Specifications-Documentation/blob/master/Formats/PS2/GT4_SSQT_SqTable.bt)
 * **The code for this tool** will have more details.
