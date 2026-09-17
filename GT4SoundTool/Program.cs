@@ -118,6 +118,15 @@ public class Program
             int sampleIdx = 0;
             for (int j = 0; j < channelToPrograms.Count; j++)
             {
+                var progIndex = channelToPrograms[j].Program;
+
+                // for some reason powerspeed calls program/instrument 10 (doesnt exist) on its 7th channel, It also does this ingame!
+                // to avoid overflow we just continue for now
+                if (progIndex >= instrument.JamHeader.ProgramChunks.Count)
+                {
+                    Console.WriteLine($"channel {channelToPrograms[j].Channel} wants Program index {progIndex} but it doesnt exist, there is only {instrument.JamHeader.ProgramChunks.Count} programs on track {i}");
+                    continue;
+                }
                 JamProgChunk prog = instrument.JamHeader.ProgramChunks[channelToPrograms[j].Program];
                 foreach (JamSplitChunk splitChunk in prog.SplitChunks)
                 {
@@ -178,6 +187,12 @@ public class Program
 
             for (int j = 0; j < channelToPrograms.Count; j++)
             {
+                var progIndex = channelToPrograms[j].Program;
+                if (progIndex >= instrument.JamHeader.ProgramChunks.Count)
+                {
+                    Console.WriteLine($"channel {channelToPrograms[j].Channel} wants Program index {progIndex} but it doesnt exist, there is only {instrument.JamHeader.ProgramChunks.Count} programs on track {i}");
+                    continue;
+                }
                 JamProgChunk prog = instrument.JamHeader.ProgramChunks[channelToPrograms[j].Program];
 
                 string name = $"ch{channelToPrograms[j].Channel}_prog{channelToPrograms[j].Program}";
