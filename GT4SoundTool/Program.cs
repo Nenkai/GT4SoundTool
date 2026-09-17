@@ -133,13 +133,14 @@ public class Program
                     var bs = new BinaryStream(fs);
                     byte[] vag = splitChunk.GetData(bs, out uint loopStart, out uint loopEnd);
 
-                    vagSamples.Add(splitChunk.SD_VA_SSA, new SampleInfo(vag, (ushort)vagSamples.Count));
 
                     // Decode sony vag format into regular waveform (PCM16)
                     byte[] decoded = SonyVag.Decode(vag);
                     Span<short> pcm16 = MemoryMarshal.Cast<byte, short>(decoded);
 
                     bool looping = loopStart != 0 && loopEnd != 0;
+
+                    vagSamples.Add(splitChunk.SD_VA_SSA, new SampleInfo(vag, (ushort)vagSamples.Count, looping));
 
                     Console.WriteLine($"SF2: ins{j} (base note: {splitChunk.BaseNote}) - looping: {looping}");
 
@@ -198,6 +199,8 @@ public class Program
                     int pan = (int)Normalize(splitChunk.Pan, 0, 128, -500, 500);
                     sf2.AddInstrumentGenerator(SF2Generator.Pan, new SF2GeneratorAmount { Amount = (short)pan });
 
+                    SampleInfo sampleInfo = vagSamples[splitChunk.SD_VA_SSA];
+                    bool isLooping = sampleInfo.looping;
                     // the multiplier here was brute-forced, likely not 100% accurate
                     sf2.AddInstrumentGenerator(SF2Generator.FineTune, new SF2GeneratorAmount { Amount = (short)(splitChunk.UnkPitch * 6.5)});
 
@@ -206,6 +209,10 @@ public class Program
                     else
                         sf2.AddInstrumentGenerator(SF2Generator.KeyRange, new SF2GeneratorAmount { LowByte = (byte)prog.SplitChunks[k].NoteMin, HighByte = (byte)prog.SplitChunks[k].NoteMax });
 
+                    if (sampleInfo.looping)
+                    {
+                        sf2.AddInstrumentGenerator(SF2Generator.SampleModes, new SF2GeneratorAmount { Amount = 3 });
+                    }
                     sf2.AddInstrumentGenerator(SF2Generator.SampleID, new SF2GeneratorAmount { UAmount = vagSamples[splitChunk.SD_VA_SSA].SampleID });
                 }
             }
@@ -329,4 +336,4 @@ public class Program
     }
 }
 
-public record SampleInfo(byte[] SampleData, ushort SampleID);
+public record SampleInfo(byte[] SampleData, ushort SampleID, bool looping);
