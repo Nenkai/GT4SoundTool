@@ -25,7 +25,6 @@ public static partial class SonyVag
         using (BinaryWriter PCMWriter = new BinaryWriter(PCMStream))
         {
             double hist_1 = 0.0, hist_2 = 0.0;
-
             //Start decoding
             while (VagReader.BaseStream.Position < VagReader.BaseStream.Length)
             {

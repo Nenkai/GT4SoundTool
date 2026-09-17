@@ -1,35 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Buffers.Binary;
-using System.Runtime.InteropServices;
-
-// DryWetMidi: For creating midi from sqt
-using Melanchall.DryWetMidi;
-using Melanchall.DryWetMidi.Multimedia;
-using Melanchall.DryWetMidi.Core;
-using Melanchall.DryWetMidi.Common;
-
-// Kermalis.SoundFont2: For creating sound font from ins
-using Kermalis.SoundFont2;
-
-// MeltySynth: Synthesizer for getting audio out of midi and sf2 combined
-// Note: added as git submodule for easier debugging
-using MeltySynth;
-
-// NAudio: Creating wav file from waveform output from MeltySynth
-using NAudio.Wave;
-
-using Syroot.BinaryData;
-
-using GT4SoundTool.Formats;
-using GT4SoundTool.Vag;
+﻿using GT4SoundTool.Formats;
 using GT4SoundTool.Formats.Jam;
 using GT4SoundTool.Formats.Ssqt;
 using GT4SoundTool.Formats.Ssqt.Meta;
-using System.IO;
+using GT4SoundTool.Utils;
+using GT4SoundTool.Vag;
+// Kermalis.SoundFont2: For creating sound font from ins
+using Kermalis.SoundFont2;
+// DryWetMidi: For creating midi from sqt
+using Melanchall.DryWetMidi.Common;
+using Melanchall.DryWetMidi.Core;
+// MeltySynth: Synthesizer for getting audio out of midi and sf2 combined
+// Note: added as git submodule for easier debugging
+using MeltySynth;
+// NAudio: Creating wav file from waveform output from MeltySynth
+using NAudio.Wave;
+using Syroot.BinaryData;
+using System.Runtime.InteropServices;
 
 namespace GT4SoundTool;
 
@@ -221,8 +207,16 @@ public class Program
                     int pan = (int)Normalize(splitChunk.Pan, 0, 128, -500, 500);
                     sf2.AddInstrumentGenerator(SF2Generator.Pan, new SF2GeneratorAmount { Amount = (short)pan });
 
+                    var adsr = Utils.ADSR.ConvertGt4Adsr(splitChunk.SD_VP_ADSR1, splitChunk.SD_VP_ADSR2);
                     SampleInfo sampleInfo = vagSamples[splitChunk.SD_VA_SSA];
                     bool isLooping = sampleInfo.looping;
+
+                    // ADSR handling
+                    sf2.AddInstrumentGenerator(SF2Generator.AttackVolEnv, new SF2GeneratorAmount { Amount = Utils.ADSR.SecondsToTimecents(adsr.AttackTime) });
+                    sf2.AddInstrumentGenerator(SF2Generator.DecayVolEnv, new SF2GeneratorAmount { Amount = Utils.ADSR.SecondsToTimecents(adsr.DecayTime) });
+                    sf2.AddInstrumentGenerator(SF2Generator.SustainVolEnv, new SF2GeneratorAmount { Amount = Utils.ADSR.SustainLevelToCentibels(adsr.SustainLevel) });
+                    sf2.AddInstrumentGenerator(SF2Generator.ReleaseVolEnv, new SF2GeneratorAmount { Amount = Utils.ADSR.SecondsToTimecents(adsr.ReleaseTime) });
+
                     // 15 unkPitch = 100 cents (1 semitone)
                     sf2.AddInstrumentGenerator(SF2Generator.FineTune, new SF2GeneratorAmount { Amount = (short)(splitChunk.UnkPitch * (100.0 / 15.0)) });
 
