@@ -201,8 +201,8 @@ public class Program
 
                     SampleInfo sampleInfo = vagSamples[splitChunk.SD_VA_SSA];
                     bool isLooping = sampleInfo.looping;
-                    // the multiplier here was brute-forced, likely not 100% accurate
-                    sf2.AddInstrumentGenerator(SF2Generator.FineTune, new SF2GeneratorAmount { Amount = (short)(splitChunk.UnkPitch * 6.5)});
+                    // 15 unkPitch = 100 cents (1 semitone)
+                    sf2.AddInstrumentGenerator(SF2Generator.FineTune, new SF2GeneratorAmount { Amount = (short)(splitChunk.UnkPitch * (100.0 / 15.0)) });
 
                     if (prog.CountOrFlag == 0xFF)
                         sf2.AddInstrumentGenerator(SF2Generator.KeyRange, new SF2GeneratorAmount { LowByte = (byte)(prog.StartNoteRange + k), HighByte = (byte)(prog.StartNoteRange + k) });
