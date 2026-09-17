@@ -209,6 +209,9 @@ public class Program
                     else
                         sf2.AddInstrumentGenerator(SF2Generator.KeyRange, new SF2GeneratorAmount { LowByte = (byte)prog.SplitChunks[k].NoteMin, HighByte = (byte)prog.SplitChunks[k].NoteMax });
 
+                    // some instrument splits have a different root key to the sample
+                    sf2.AddInstrumentGenerator(SF2Generator.OverridingRootKey, new SF2GeneratorAmount { Amount = (short)splitChunk.BaseNote });
+
                     if (sampleInfo.looping)
                     {
                         sf2.AddInstrumentGenerator(SF2Generator.SampleModes, new SF2GeneratorAmount { Amount = 3 });
