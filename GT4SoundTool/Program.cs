@@ -140,6 +140,13 @@ public class Program
 
                     bool looping = loopStart != 0 && loopEnd != 0;
 
+                    // reverb flag
+                    if (splitChunk.Flags >= 127)
+                    {
+                        // obviously sf2 /= ps2 spu reverb, lets just do like 10%
+                        sf2.AddInstrumentGenerator(SF2Generator.ReverbEffectsSend, new SF2GeneratorAmount { Amount = 100 });
+                    }
+
                     vagSamples.Add(splitChunk.SD_VA_SSA, new SampleInfo(vag, (ushort)vagSamples.Count, looping));
 
                     Console.WriteLine($"SF2: ins{j} (base note: {splitChunk.BaseNote}) - looping: {looping}");
