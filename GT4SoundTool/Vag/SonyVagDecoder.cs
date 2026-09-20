@@ -25,10 +25,6 @@ public static partial class SonyVag
         using (BinaryWriter PCMWriter = new BinaryWriter(PCMStream))
         {
             double hist_1 = 0.0, hist_2 = 0.0;
-
-            //Skip header
-            VagReader.BaseStream.Seek(16, SeekOrigin.Begin);
-
             //Start decoding
             while (VagReader.BaseStream.Position < VagReader.BaseStream.Length)
             {
@@ -46,40 +42,34 @@ public static partial class SonyVag
                 {
                     break;
                 }
-                else if(vc.flags == (byte)VAGFlag.VAGF_LOOP_START)
+
+                int[] samples = new int[VAG_SAMPLE_NIBBL];
+
+                // expand 4bit -> 8bit
+                for (int j = 0; j < VAG_SAMPLE_BYTES; j++)
                 {
-                    var sample = PCMStream.Length / 2;
+                    samples[j * 2] = vc.sample[j] & 0xF;
+                    samples[j * 2 + 1] = (vc.sample[j] & 0xF0) >> 4;
                 }
-                else
+
+                //Decode samples
+                for (int j = 0; j < VAG_SAMPLE_NIBBL; j++)
                 {
-                    int[] samples = new int[VAG_SAMPLE_NIBBL];
-
-                    // expand 4bit -> 8bit
-                    for (int j = 0; j < VAG_SAMPLE_BYTES; j++)
+                    // shift 4 bits to top range of int16_t
+                    int s = samples[j] << 12;
+                    if ((s & 0x8000) != 0)
                     {
-                        samples[j * 2] = vc.sample[j] & 0xF;
-                        samples[j * 2 + 1] = (vc.sample[j] & 0xF0) >> 4;
+                        s = (int)(s | 0xFFFF0000);
                     }
 
-                    //Decode samples
-                    for (int j = 0; j < VAG_SAMPLE_NIBBL; j++)
-                    {
-                        // shift 4 bits to top range of int16_t
-                        int s = samples[j] << 12;
-                        if ((s & 0x8000) != 0)
-                        {
-                            s = (int)(s | 0xFFFF0000);
-                        }
+                    /* swy: don't overflow the LUT array access; limit the max allowed index */
+                    sbyte predict = Math.Min(vc.predict, (sbyte)(VagLutDecoder.GetLength(0) - 1));
 
-                        /* swy: don't overflow the LUT array access; limit the max allowed index */
-                        sbyte predict = Math.Min(vc.predict, (sbyte)(VagLutDecoder.GetLength(0) - 1));
+                    double sample = (s >> vc.shift) + hist_1 * VagLutDecoder[predict, 0] + hist_2 * VagLutDecoder[predict, 1];
+                    hist_2 = hist_1;
+                    hist_1 = sample;
 
-                        double sample = (s >> vc.shift) + hist_1 * VagLutDecoder[predict, 0] + hist_2 * VagLutDecoder[predict, 1];
-                        hist_2 = hist_1;
-                        hist_1 = sample;
-
-                        PCMWriter.Write((short)(Math.Min(short.MaxValue, Math.Max(sample, short.MinValue))));
-                    }
+                    PCMWriter.Write((short)(Math.Min(short.MaxValue, Math.Max(sample, short.MinValue))));
                 }
             }
             pcmData = PCMStream.ToArray();
@@ -88,7 +78,6 @@ public static partial class SonyVag
             PCMStream.Close();
             VagReader.Close();
         }
-
         return pcmData;
     }
 }

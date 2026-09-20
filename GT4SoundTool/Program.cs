@@ -1,35 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Buffers.Binary;
-using System.Runtime.InteropServices;
-
-// DryWetMidi: For creating midi from sqt
-using Melanchall.DryWetMidi;
-using Melanchall.DryWetMidi.Multimedia;
-using Melanchall.DryWetMidi.Core;
-using Melanchall.DryWetMidi.Common;
-
-// Kermalis.SoundFont2: For creating sound font from ins
-using Kermalis.SoundFont2;
-
-// MeltySynth: Synthesizer for getting audio out of midi and sf2 combined
-// Note: added as git submodule for easier debugging
-using MeltySynth;
-
-// NAudio: Creating wav file from waveform output from MeltySynth
-using NAudio.Wave;
-
-using Syroot.BinaryData;
-
-using GT4SoundTool.Formats;
-using GT4SoundTool.Vag;
+﻿using GT4SoundTool.Formats;
 using GT4SoundTool.Formats.Jam;
 using GT4SoundTool.Formats.Ssqt;
 using GT4SoundTool.Formats.Ssqt.Meta;
-using System.IO;
+using GT4SoundTool.Utils;
+using GT4SoundTool.Vag;
+// Kermalis.SoundFont2: For creating sound font from ins
+using Kermalis.SoundFont2;
+// DryWetMidi: For creating midi from sqt
+using Melanchall.DryWetMidi.Common;
+using Melanchall.DryWetMidi.Core;
+// MeltySynth: Synthesizer for getting audio out of midi and sf2 combined
+// Note: added as git submodule for easier debugging
+using MeltySynth;
+// NAudio: Creating wav file from waveform output from MeltySynth
+using NAudio.Wave;
+using Syroot.BinaryData;
+using System.Runtime.InteropServices;
 
 namespace GT4SoundTool;
 
@@ -118,6 +104,15 @@ public class Program
             int sampleIdx = 0;
             for (int j = 0; j < channelToPrograms.Count; j++)
             {
+                var progIndex = channelToPrograms[j].Program;
+
+                // for some reason powerspeed calls program/instrument 10 (doesnt exist) on its 7th channel, It also does this ingame!
+                // to avoid overflow we just continue for now
+                if (progIndex >= instrument.JamHeader.ProgramChunks.Count)
+                {
+                    Console.WriteLine($"channel {channelToPrograms[j].Channel} wants Program index {progIndex} but it doesnt exist, there is only {instrument.JamHeader.ProgramChunks.Count} programs on track {i}");
+                    continue;
+                }
                 JamProgChunk prog = instrument.JamHeader.ProgramChunks[channelToPrograms[j].Program];
                 foreach (JamSplitChunk splitChunk in prog.SplitChunks)
                 {
@@ -133,13 +128,21 @@ public class Program
                     var bs = new BinaryStream(fs);
                     byte[] vag = splitChunk.GetData(bs, out uint loopStart, out uint loopEnd);
 
-                    vagSamples.Add(splitChunk.SD_VA_SSA, new SampleInfo(vag, (ushort)vagSamples.Count));
 
                     // Decode sony vag format into regular waveform (PCM16)
                     byte[] decoded = SonyVag.Decode(vag);
                     Span<short> pcm16 = MemoryMarshal.Cast<byte, short>(decoded);
 
                     bool looping = loopStart != 0 && loopEnd != 0;
+
+                    // reverb flag
+                    if (splitChunk.Flags >= 127)
+                    {
+                        // obviously sf2 /= ps2 spu reverb, lets just do like 10%
+                        sf2.AddInstrumentGenerator(SF2Generator.ReverbEffectsSend, new SF2GeneratorAmount { Amount = 100 });
+                    }
+
+                    vagSamples.Add(splitChunk.SD_VA_SSA, new SampleInfo(vag, (ushort)vagSamples.Count, looping));
 
                     Console.WriteLine($"SF2: ins{j} (base note: {splitChunk.BaseNote}) - looping: {looping}");
 
@@ -170,6 +173,12 @@ public class Program
 
             for (int j = 0; j < channelToPrograms.Count; j++)
             {
+                var progIndex = channelToPrograms[j].Program;
+                if (progIndex >= instrument.JamHeader.ProgramChunks.Count)
+                {
+                    Console.WriteLine($"channel {channelToPrograms[j].Channel} wants Program index {progIndex} but it doesnt exist, there is only {instrument.JamHeader.ProgramChunks.Count} programs on track {i}");
+                    continue;
+                }
                 JamProgChunk prog = instrument.JamHeader.ProgramChunks[channelToPrograms[j].Program];
 
                 string name = $"ch{channelToPrograms[j].Channel}_prog{channelToPrograms[j].Program}";
@@ -198,14 +207,31 @@ public class Program
                     int pan = (int)Normalize(splitChunk.Pan, 0, 128, -500, 500);
                     sf2.AddInstrumentGenerator(SF2Generator.Pan, new SF2GeneratorAmount { Amount = (short)pan });
 
-                    // the multiplier here was brute-forced, likely not 100% accurate
-                    sf2.AddInstrumentGenerator(SF2Generator.FineTune, new SF2GeneratorAmount { Amount = (short)(splitChunk.UnkPitch * 6.5)});
+                    var adsr = Utils.ADSR.ConvertGt4Adsr(splitChunk.SD_VP_ADSR1, splitChunk.SD_VP_ADSR2);
+                    SampleInfo sampleInfo = vagSamples[splitChunk.SD_VA_SSA];
+                    bool isLooping = sampleInfo.looping;
+
+                    // ADSR handling
+                    sf2.AddInstrumentGenerator(SF2Generator.AttackVolEnv, new SF2GeneratorAmount { Amount = Utils.ADSR.SecondsToTimecents(adsr.AttackTime) });
+                    sf2.AddInstrumentGenerator(SF2Generator.DecayVolEnv, new SF2GeneratorAmount { Amount = Utils.ADSR.SecondsToTimecents(adsr.DecayTime) });
+                    sf2.AddInstrumentGenerator(SF2Generator.SustainVolEnv, new SF2GeneratorAmount { Amount = Utils.ADSR.SustainLevelToCentibels(adsr.SustainLevel) });
+                    sf2.AddInstrumentGenerator(SF2Generator.ReleaseVolEnv, new SF2GeneratorAmount { Amount = Utils.ADSR.SecondsToTimecents(adsr.ReleaseTime) });
+
+                    // 15 unkPitch = 100 cents (1 semitone)
+                    sf2.AddInstrumentGenerator(SF2Generator.FineTune, new SF2GeneratorAmount { Amount = (short)(splitChunk.UnkPitch * (100.0 / 15.0)) });
 
                     if (prog.CountOrFlag == 0xFF)
                         sf2.AddInstrumentGenerator(SF2Generator.KeyRange, new SF2GeneratorAmount { LowByte = (byte)(prog.StartNoteRange + k), HighByte = (byte)(prog.StartNoteRange + k) });
                     else
                         sf2.AddInstrumentGenerator(SF2Generator.KeyRange, new SF2GeneratorAmount { LowByte = (byte)prog.SplitChunks[k].NoteMin, HighByte = (byte)prog.SplitChunks[k].NoteMax });
 
+                    // some instrument splits have a different root key to the sample
+                    sf2.AddInstrumentGenerator(SF2Generator.OverridingRootKey, new SF2GeneratorAmount { Amount = (short)splitChunk.BaseNote });
+
+                    if (sampleInfo.looping)
+                    {
+                        sf2.AddInstrumentGenerator(SF2Generator.SampleModes, new SF2GeneratorAmount { Amount = 3 });
+                    }
                     sf2.AddInstrumentGenerator(SF2Generator.SampleID, new SF2GeneratorAmount { UAmount = vagSamples[splitChunk.SD_VA_SSA].SampleID });
                 }
             }
@@ -329,4 +355,4 @@ public class Program
     }
 }
 
-public record SampleInfo(byte[] SampleData, ushort SampleID);
+public record SampleInfo(byte[] SampleData, ushort SampleID, bool looping);
