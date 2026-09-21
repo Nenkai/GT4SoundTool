@@ -99,7 +99,7 @@ public class Program
             var sf2 = new SF2();
 
             // First find all samples in the instrument file by navigating through program chunks
-            Dictionary<uint, SampleInfo> vagSamples = new Dictionary<uint, SampleInfo>();
+            Dictionary<uint, SampleInfo> vagSamples = [];
 
             int sampleIdx = 0;
             for (int j = 0; j < channelToPrograms.Count; j++)
@@ -136,10 +136,10 @@ public class Program
                     bool looping = loopStart != 0 && loopEnd != 0;
 
                     // reverb flag
-                    if (splitChunk.Flags >= 127)
+                    if (splitChunk.Flags.HasFlag(JamSplitChunk.JamSplitChunkFlags.MixingReverb))
                     {
-                        // obviously sf2 /= ps2 spu reverb, lets just do like 10%
-                        sf2.AddInstrumentGenerator(SF2Generator.ReverbEffectsSend, new SF2GeneratorAmount { Amount = 100 });
+                        // obviously sf2 /= ps2 spu reverb, lets just do like 20%
+                        sf2.AddInstrumentGenerator(SF2Generator.ReverbEffectsSend, new SF2GeneratorAmount { Amount = 200 });
                     }
 
                     vagSamples.Add(splitChunk.SD_VA_SSA, new SampleInfo(vag, (ushort)vagSamples.Count, looping));
@@ -159,8 +159,9 @@ public class Program
                     // Dump instrument noises (debug)
                     WaveFormat waveFormat = new WaveFormat(44100, 16, 1);
                     Directory.CreateDirectory("samples");
-                    using (WaveFileWriter writer = new WaveFileWriter($"samples/instrument{j}_{splitChunk.BaseNote}.wav", waveFormat))
-                        writer.WriteSamples(pcm16.ToArray(), 0, pcm16.Length);
+
+                    using WaveFileWriter writer = new WaveFileWriter($"samples/instrument{j}_{splitChunk.BaseNote}.wav", waveFormat);
+                    writer.WriteSamples(pcm16.ToArray(), 0, pcm16.Length);
 
                 }
             }
@@ -179,6 +180,7 @@ public class Program
                     Console.WriteLine($"channel {channelToPrograms[j].Channel} wants Program index {progIndex} but it doesnt exist, there is only {instrument.JamHeader.ProgramChunks.Count} programs on track {i}");
                     continue;
                 }
+
                 JamProgChunk prog = instrument.JamHeader.ProgramChunks[channelToPrograms[j].Program];
 
                 string name = $"ch{channelToPrograms[j].Channel}_prog{channelToPrograms[j].Program}";
@@ -204,34 +206,99 @@ public class Program
 
                     sf2.AddInstrumentBag();
 
-                    int pan = (int)Normalize(splitChunk.Pan, 0, 128, -500, 500);
-                    sf2.AddInstrumentGenerator(SF2Generator.Pan, new SF2GeneratorAmount { Amount = (short)pan });
-
-                    var adsr = Utils.ADSR.ConvertGt4Adsr(splitChunk.SD_VP_ADSR1, splitChunk.SD_VP_ADSR2);
-                    SampleInfo sampleInfo = vagSamples[splitChunk.SD_VA_SSA];
-                    bool isLooping = sampleInfo.looping;
-
-                    // ADSR handling
-                    sf2.AddInstrumentGenerator(SF2Generator.AttackVolEnv, new SF2GeneratorAmount { Amount = Utils.ADSR.SecondsToTimecents(adsr.AttackTime) });
-                    sf2.AddInstrumentGenerator(SF2Generator.DecayVolEnv, new SF2GeneratorAmount { Amount = Utils.ADSR.SecondsToTimecents(adsr.DecayTime) });
-                    sf2.AddInstrumentGenerator(SF2Generator.SustainVolEnv, new SF2GeneratorAmount { Amount = Utils.ADSR.SustainLevelToCentibels(adsr.SustainLevel) });
-                    sf2.AddInstrumentGenerator(SF2Generator.ReleaseVolEnv, new SF2GeneratorAmount { Amount = Utils.ADSR.SecondsToTimecents(adsr.ReleaseTime) });
-
-                    // 15 unkPitch = 100 cents (1 semitone)
-                    sf2.AddInstrumentGenerator(SF2Generator.FineTune, new SF2GeneratorAmount { Amount = (short)(splitChunk.UnkPitch * (100.0 / 15.0)) });
-
+                    // Note Range
                     if (prog.CountOrFlag == 0xFF)
                         sf2.AddInstrumentGenerator(SF2Generator.KeyRange, new SF2GeneratorAmount { LowByte = (byte)(prog.StartNoteRange + k), HighByte = (byte)(prog.StartNoteRange + k) });
                     else
                         sf2.AddInstrumentGenerator(SF2Generator.KeyRange, new SF2GeneratorAmount { LowByte = (byte)prog.SplitChunks[k].NoteMin, HighByte = (byte)prog.SplitChunks[k].NoteMax });
 
+                    // Base Note
                     // some instrument splits have a different root key to the sample
                     sf2.AddInstrumentGenerator(SF2Generator.OverridingRootKey, new SF2GeneratorAmount { Amount = (short)splitChunk.BaseNote });
 
-                    if (sampleInfo.looping)
+                    // Pan
+                    int pan = (int)Normalize(splitChunk.Pan, 0, 128, -500, 500);
+                    sf2.AddInstrumentGenerator(SF2Generator.Pan, new SF2GeneratorAmount { Amount = (short)pan });
+
+                    // ADSR handling
+                    var adsr = ADSR.ConvertGt4Adsr(splitChunk.SD_VP_ADSR1, splitChunk.SD_VP_ADSR2);
+                    SampleInfo sampleInfo = vagSamples[splitChunk.SD_VA_SSA];
+
+                    sf2.AddInstrumentGenerator(SF2Generator.AttackVolEnv, new SF2GeneratorAmount { Amount = ADSR.SecondsToTimecents(adsr.AttackTime) });
+                    sf2.AddInstrumentGenerator(SF2Generator.DecayVolEnv, new SF2GeneratorAmount { Amount = ADSR.SecondsToTimecents(adsr.DecayTime) });
+                    sf2.AddInstrumentGenerator(SF2Generator.SustainVolEnv, new SF2GeneratorAmount { Amount = ADSR.SustainLevelToCentibels(adsr.SustainLevel) });
+                    sf2.AddInstrumentGenerator(SF2Generator.ReleaseVolEnv, new SF2GeneratorAmount { Amount = ADSR.SecondsToTimecents(adsr.ReleaseTime) });
+
+                    // Pitch
+                    float pitchSemitones = splitChunk.Pitch / 16.0f;
+                    int pitchSemitonesFloor = (short)MathF.Floor(pitchSemitones);
+                    sf2.AddInstrumentGenerator(SF2Generator.CoarseTune, new SF2GeneratorAmount { Amount = (short)MathF.Floor(pitchSemitones) });
+                    sf2.AddInstrumentGenerator(SF2Generator.FineTune, new SF2GeneratorAmount { Amount = (short)MathF.Round((pitchSemitones - pitchSemitonesFloor) * 100) });
+
+                    // Volume
+                    // NOTE: Could probably be split into two - preset generator + instrument generator
+                    double linearGain = (prog.BaseVolume / 127.0) * (splitChunk.Volume / 127.0);
+                    double atten_dB = -20.0 * Math.Log10(Math.Max(linearGain, 0.001));
+                    short atten_cB = (short)Math.Clamp(Math.Round(atten_dB * 10.0), 0, 1000);
+                    sf2.AddInstrumentGenerator(SF2Generator.InitialAttenuation, new SF2GeneratorAmount { Amount = atten_cB });
+
+                    if (splitChunk.Flags.HasFlag(JamSplitChunk.JamSplitChunkFlags.PitchModulateSpeedAndDepth))
                     {
+                        // TODO.
+                        /*
+                         if ( (JamSplitChunk->Flags & 0x20) != 0 )
+                         {
+                           SDDRV::Voice::setPitchModulateSpeed(this->Voice, 10);
+                           SDDRV::Voice::setPitchModulateDepth(this->Voice, 127);
+                         }
+                        */
+
+                        /*
+                        sf2.AddInstrumentGenerator(SF2Generator.VibLfoToPitch, new SF2GeneratorAmount { Amount = vibDepthCents });
+                        sf2.AddInstrumentGenerator(SF2Generator.FreqVibLFO, new SF2GeneratorAmount { Amount = freqVibLFO });
+                        */
+                    }
+
+                    int lfoIndex = splitChunk.Flags.HasFlag(JamSplitChunk.JamSplitChunkFlags.UseLfoTableIndexFromProgChunk) ? prog.LfoTableIndex : splitChunk.LfoTableIndex;
+                    if (lfoIndex != 127)
+                    {
+                        // TODO
+                        /*
+                        LfoTable = SDDRV::Jam::getLfoTable(this->Jam, LfoTableIndex);
+                        if ( LfoTable )
+                          SDDRV::Voice::setPitchModulateTable(this->Voice, LfoTable);
+                        */
+
+                        /*
+                         * __int64 SDDRV::Jam::getLfoTable(Jam *this, int index)
+                           {
+                             ushort* table = this->JamHeaderLfoTables;
+                             void* result = 0;
+                             if ( table )
+                             {
+                               if ( *table >= index )
+                                 return (int)table + (table[index + 1] & 0xFFFE);
+                             }
+                             return result;
+                           }
+                        */
+                    }
+
+                    // Reverb flag
+                    if (splitChunk.Flags.HasFlag(JamSplitChunk.JamSplitChunkFlags.MixingReverb))
+                    {
+                        // obviously sf2 /= ps2 spu reverb, lets just do like 20%
+                        // GT4 uses sceSdEffectAttr with mode SD_REV_MODE_STUDIO_C (4), depth_L & depth_R = 0xFFF0. Assigned in BGM::dsp_init (GT4O_US: 0x2E06C0)
+                        sf2.AddInstrumentGenerator(SF2Generator.ReverbEffectsSend, new SF2GeneratorAmount { Amount = 200 });
+                    }
+
+                    if (sampleInfo.Looping)
+                    {
+                        // 3 indicates a sound which loops for the duration of key depression then proceeds to play the remainder of the sample.
                         sf2.AddInstrumentGenerator(SF2Generator.SampleModes, new SF2GeneratorAmount { Amount = 3 });
                     }
+
+                    // Sample
                     sf2.AddInstrumentGenerator(SF2Generator.SampleID, new SF2GeneratorAmount { UAmount = vagSamples[splitChunk.SD_VA_SSA].SampleID });
                 }
             }
@@ -276,7 +343,7 @@ public class Program
         for (int i = 0; i < ssqt.Tracks.Count; i++)
         {
             var sqTrack = ssqt.Tracks[i];
-            List<MidiEvent> midiEvents = new List<MidiEvent>(sqTrack.Messages.Count);
+            List<MidiEvent> midiEvents = new(sqTrack.Messages.Count);
 
             int j = 0;
             foreach (SqMessage message in sqTrack.Messages)
@@ -287,16 +354,14 @@ public class Program
                 MidiEvent midiEvent;
                 if (message.Status == 0xFF)
                 {
-                    SqMetaEvent meta = message.Event as SqMetaEvent;
+                    SqMetaEvent meta = (SqMetaEvent)message.Event;
                     if (meta.Meta is SqSetTempoEvent tempoEvent)
                         midiEvent = new SetTempoEvent(tempoEvent.UsecPerQuarterNote);
                     else
                         throw new NotImplementedException();
-
                 }
                 else
                 {
-                    MidiEvent channelEvent;
                     if (message.Event is SqProgramEvent programEvent)
                     {
                         midiEvent = new ProgramChangeEvent((SevenBitNumber)programEvent.Program);
@@ -326,7 +391,7 @@ public class Program
                     }
 
 
-                    (midiEvent as ChannelEvent).Channel = (FourBitNumber)(message.Status & 0x0F);
+                    ((ChannelEvent)midiEvent).Channel = (FourBitNumber)(byte)(message.Status & 0x0F);
                     j++;
                 }
 
@@ -344,8 +409,10 @@ public class Program
               this->BPM = v3; // might not be bpm?
             } */
 
-            var midi = new Melanchall.DryWetMidi.Core.MidiFile(new TrackChunk(midiEvents));
-            midi.TimeDivision = new TicksPerQuarterNoteTimeDivision((short)sqTrack.TicksPerBeat); // Directly set the time division since we already have the raw value
+            var midi = new Melanchall.DryWetMidi.Core.MidiFile(new TrackChunk(midiEvents))
+            {
+                TimeDivision = new TicksPerQuarterNoteTimeDivision((short)sqTrack.TicksPerBeat) // Directly set the time division since we already have the raw value
+            };
 
             string fileName = Path.GetFileNameWithoutExtension(sqtFile);
             midi.Write($"{fileName}.{i}.mid", overwriteFile: true, MidiFileFormat.SingleTrack);
@@ -355,4 +422,4 @@ public class Program
     }
 }
 
-public record SampleInfo(byte[] SampleData, ushort SampleID, bool looping);
+public record SampleInfo(byte[] SampleData, ushort SampleID, bool Looping);

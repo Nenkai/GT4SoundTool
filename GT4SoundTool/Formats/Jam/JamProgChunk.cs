@@ -39,7 +39,7 @@ public class JamProgChunk
     /// <summary>
     /// Only used if <see cref="JamSplitChunk.Flags"/> has 0x10
     /// </summary>
-    public byte UnkPitchRelated_0x04 { get; set; }
+    public byte PitchBendSensitivity { get; set; }
 
     /// <summary>
     /// Lfo table index. 0x7F = no lfo in use <br/>
@@ -65,7 +65,7 @@ public class JamProgChunk
         BaseVolume = bs.Read1Byte();
         Pan = bs.Read1Byte();
         field_0x03 = bs.Read1Byte();
-        UnkPitchRelated_0x04 = bs.Read1Byte();
+        PitchBendSensitivity = bs.Read1Byte();
         LfoTableIndex = bs.Read1Byte();
         StartNoteRange = (Note)bs.Read1Byte();
         EndNoteRange = (Note)bs.Read1Byte();
@@ -100,23 +100,15 @@ public class JamSplitChunk
     public Note BaseNote { get; set; }
 
     /// <summary>
-    /// Pitch correction? No idea, but very important.
+    /// Pitch. 1 = 1/16 semitones
     /// </summary>
-    public sbyte UnkPitch { get; set; }
+    public sbyte Pitch { get; set; }
 
-    /* 0x01 = ?? 
-     * 0x02 = SetNoiseShiftFrequency, // SE only
-     * 0x10 = UseProgChunkForUnkPitchValue - Use prog chunk's unk pitch (?) value
-     * 0x20 = PitchModulateSpeedAndDepth - 
-     * 0x40 = UseProgChunkForLfoTableIndex - Use prog chunk's lfo table index
-     * 0x80 = mixing? maybe for reverb - sets SD_S_VMIXL & SD_S_VMIXR
 
-       don't think there's more
-    */
-    public byte Flags { get; set; }
+    public JamSplitChunkFlags Flags { get; set; }
 
     /// <summary>
-    /// <b>Offset of vag data (ssa).</b><br/>
+    /// <b>Offset of vag data (ssa, sample start address).</b><br/>
     /// Multiply by 0x10 for sample data offset starting from bd offset.<br />
     /// <br/>
     /// PlayStation 2 IOP Library Reference Release 3.0.2 - Sound Libraries<br />
@@ -150,7 +142,7 @@ public class JamSplitChunk
     public short SD_VP_ADSR2 { get; set; }
 
     /// <summary>
-    /// In %. 100 is default
+    /// 0-127, where 127 = full volume
     /// </summary>
     public byte Volume { get; set; }
 
@@ -160,9 +152,9 @@ public class JamSplitChunk
     public byte Pan { get; set; }
 
     /// <summary>
-    /// Unknown, pitch related? Only used if <see cref="Flags"/> has 0x10, otherwise <see cref="JamProgChunk.UnkPitchRelated_0x04"/> is used.
+    /// Number of semitones the pitch shifts at full pitch-wheel deflection? Only used if <see cref="Flags"/> has 0x10, otherwise <see cref="JamProgChunk.PitchBendSensitivity"/> is used.
     /// </summary>
-    public byte UnkPitchRelated_0x0E { get; set; }
+    public byte PitchBendSensitivity { get; set; }
 
     /// <summary>
     /// Lfo table index. Only used if <see cref="Flags"/> does NOT have 0x40, otherwise <see cref="JamProgChunk.LfoTableIndex"/> is used. <br />
@@ -175,14 +167,14 @@ public class JamSplitChunk
         NoteMin = (Note)bs.Read1Byte();
         NoteMax = (Note)bs.Read1Byte();
         BaseNote = (Note)bs.Read1Byte();
-        UnkPitch = bs.ReadSByte();
-        Flags = bs.Read1Byte();
+        Pitch = bs.ReadSByte();
+        Flags = (JamSplitChunkFlags)bs.Read1Byte();
         SD_VA_SSA = (uint)((bs.Read1Byte() << 16) | bs.ReadUInt16()); // Game code refers to the offset to audio as Ssa
         SD_VP_ADSR1 = bs.ReadInt16();
         SD_VP_ADSR2 = bs.ReadInt16();
         Volume = bs.Read1Byte();
         Pan = bs.Read1Byte();
-        UnkPitchRelated_0x0E = bs.Read1Byte();
+        PitchBendSensitivity = bs.Read1Byte();
         LfoTableIndex = bs.Read1Byte();
     }
 
@@ -226,5 +218,33 @@ public class JamSplitChunk
     public override string ToString()
     {
         return $"{NoteMin}->{NoteMax}";
+    }
+
+    [Flags]
+    public enum JamSplitChunkFlags : byte
+    {
+        UnkBit1 = 1 << 0, // 0x01
+
+        /// <summary>
+        /// SE only
+        /// </summary>
+        SetNoiseShiftFrequency = 1 << 1, // 0x02
+
+        /// <summary>
+        /// Use prog chunk's PitchBendSensitivity instead of split chunk's
+        /// </summary>
+        UsePitchBendSensitivityFromProgChunk = 1 << 4, // 0x10
+
+        PitchModulateSpeedAndDepth = 1 << 5, // 0x20
+
+        /// <summary>
+        /// Use prog chunk's LfoTableIndex instead of split chunk's
+        /// </summary>
+        UseLfoTableIndexFromProgChunk = 1 << 6, // 0x40
+
+        /// <summary>
+        /// Whether to use mixing for effects (reverb, sets SD_S_VMIXL & SD_S_VMIXR)
+        /// </summary>
+        MixingReverb = 1 << 7, // 0x80
     }
 }
