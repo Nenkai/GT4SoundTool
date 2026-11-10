@@ -1,7 +1,4 @@
-﻿using System;
-using System.IO;
-
-namespace GT4SoundTool.Vag;
+﻿namespace GT4SoundTool.Vag;
 
 // Taken from https://github.com/eurotools/es-ps2-vag-tool/
 // Added license file just incase

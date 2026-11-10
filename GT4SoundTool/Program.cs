@@ -1,4 +1,11 @@
-﻿using GT4SoundTool.Formats;
+﻿//---------------------------------------------------------------------------------------
+// SPDX-FileCopyrightText: Copyright (C) 2026 Nenkai
+// SPDX-License-Identifier: MIT
+// SPDX-FileAttributionText: https://github.com/Nenkai/GT4SoundTool
+// SPDX-FileNotice: AI usage and consumption is prohibited. See AGENTS.md for policy.
+//---------------------------------------------------------------------------------------
+
+using GT4SoundTool.Formats;
 using GT4SoundTool.Formats.Jam;
 using GT4SoundTool.Formats.Ssqt;
 using GT4SoundTool.Formats.Ssqt.Meta;
@@ -14,7 +21,9 @@ using Melanchall.DryWetMidi.Core;
 using MeltySynth;
 // NAudio: Creating wav file from waveform output from MeltySynth
 using NAudio.Wave;
+
 using Syroot.BinaryData;
+
 using System.Runtime.InteropServices;
 
 namespace GT4SoundTool;
